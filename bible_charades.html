@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bible Charades</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --border-radius-lg: 16px;
+  --border-radius-md: 10px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+body { background: #0f172a; font-family: var(--font-sans); }
+.wrap { font-family: var(--font-sans); background: #0f172a; min-height: 100vh; border-radius: var(--border-radius-lg); overflow: hidden; position: relative; }
+.screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem 1rem; position: relative; }
+.screen.active { display: flex; }
+.glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, #4338ca22 0%, transparent 65%); pointer-events: none; }
+.logo { font-size: 13px; letter-spacing: 0.12em; color: #4f46e5; margin-bottom: 0.5rem; text-transform: uppercase; }
+.hero { font-size: clamp(28px, 7vw, 38px); font-weight: 500; color: #f1f5f9; text-align: center; margin-bottom: 0.5rem; }
+.sub { font-size: clamp(13px, 3.5vw, 15px); color: #64748b; margin-bottom: 1.5rem; text-align: center; }
+
+/* ── HOME SCREEN ── */
+.group-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 480px; margin-bottom: 1.5rem; }
+.group-input-wrap { background: #1e293b; border-radius: var(--border-radius-md); padding: 12px 16px; }
+.group-label { font-size: 12px; color: #475569; margin-bottom: 6px; letter-spacing: 0.06em; }
+.group-input { background: transparent; border: none; outline: none; font-size: clamp(15px, 4vw, 18px); color: #f1f5f9; width: 100%; font-family: var(--font-sans); }
+.btn-primary { background: #6366f1; color: #fff; border: none; padding: 16px 40px; border-radius: var(--border-radius-md); font-size: clamp(15px, 4vw, 17px); cursor: pointer; font-family: var(--font-sans); width: 100%; max-width: 480px; transition: background 0.15s; }
+.btn-primary:hover { background: #4f46e5; }
+
+/* ── SCOREBOARD ── */
+.scoreboard { display: flex; gap: 8px; width: 100%; max-width: 560px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.score-card { flex: 1; min-width: 70px; background: #1e293b; border-radius: var(--border-radius-md); padding: 10px 8px; text-align: center; border: 1.5px solid transparent; transition: border 0.2s; }
+.score-card.active-group { border-color: #6366f1; background: #1e1b4b; }
+.score-card .gname { font-size: clamp(11px, 2.8vw, 13px); color: #64748b; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.score-card .gscore { font-size: clamp(20px, 5vw, 26px); font-weight: 500; color: #a5b4fc; }
+
+/* ── GAME SCREEN ── */
+.turn-badge { font-size: clamp(13px, 3.5vw, 15px); color: #a5b4fc; background: #1e1b4b; border: 0.5px solid #4338ca55; padding: 6px 18px; border-radius: 99px; margin-bottom: 1.25rem; text-align: center; }
+.progress-text { font-size: clamp(13px, 3vw, 14px); color: #475569; margin-bottom: 0.75rem; }
+
+.timer-ring { position: relative; width: clamp(110px, 28vw, 140px); height: clamp(110px, 28vw, 140px); margin-bottom: 1.5rem; }
+.timer-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.timer-bg { fill: none; stroke: #1e293b; stroke-width: 9; }
+.timer-progress { fill: none; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-number { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(28px, 8vw, 40px); font-weight: 500; color: #e2e8f0; }
+
+.char-name { font-size: clamp(32px, 9vw, 48px); font-weight: 500; color: #f1f5f9; text-align: center; margin-bottom: 0.4rem; }
+.char-cat { font-size: clamp(13px, 3.5vw, 15px); color: #475569; margin-bottom: 1.75rem; }
+
+.btn-row { display: flex; gap: 12px; margin-bottom: 1rem; width: 100%; max-width: 380px; }
+.btn { flex: 1; padding: 16px; border-radius: var(--border-radius-md); font-size: clamp(15px, 4vw, 17px); cursor: pointer; border: none; font-family: var(--font-sans); transition: opacity 0.15s; font-weight: 500; }
+.btn:hover { opacity: 0.85; }
+.btn-skip { background: #1e293b; color: #94a3b8; }
+.btn-got { background: #6366f1; color: #fff; }
+.btn-pause { background: #1e293b; border: 0.5px solid #334155; color: #64748b; padding: 10px 24px; border-radius: var(--border-radius-md); font-size: clamp(13px, 3.5vw, 15px); cursor: pointer; font-family: var(--font-sans); }
+.btn-pause:hover { color: #94a3b8; }
+
+/* ── PAUSE SCREEN ── */
+.paused-title { font-size: clamp(26px, 6vw, 32px); font-weight: 500; color: #f1f5f9; text-align: center; margin-bottom: 0.5rem; }
+.paused-sub { font-size: clamp(14px, 3.5vw, 16px); color: #64748b; text-align: center; margin-bottom: 0.5rem; }
+.paused-next { font-size: clamp(20px, 5vw, 26px); font-weight: 500; color: #a5b4fc; text-align: center; margin-bottom: 1.5rem; }
+.group-done-score { font-size: clamp(14px, 3.5vw, 17px); color: #475569; margin-bottom: 0.5rem; text-align: center; }
+.btn-play { background: #6366f1; color: #fff; border: none; padding: 16px 40px; border-radius: var(--border-radius-md); font-size: clamp(15px, 4vw, 17px); cursor: pointer; font-family: var(--font-sans); width: 100%; max-width: 480px; }
+.btn-play:hover { background: #4f46e5; }
+
+/* ── WINNER SCREEN ── */
+.trophy { font-size: clamp(48px, 12vw, 64px); margin-bottom: 1rem; }
+.winner-name { font-size: clamp(32px, 8vw, 44px); font-weight: 500; color: #a5b4fc; margin-bottom: 0.5rem; text-align: center; }
+.winner-score { font-size: clamp(14px, 3.5vw, 16px); color: #64748b; margin-bottom: 1.5rem; text-align: center; }
+.final-scores { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; margin-bottom: 1.5rem; }
+.final-row { display: flex; justify-content: space-between; align-items: center; background: #1e293b; border-radius: var(--border-radius-md); padding: 14px 18px; }
+.final-row.winner-row { border: 1.5px solid #6366f1; background: #1e1b4b; }
+.final-row .fn { font-size: clamp(14px, 3.5vw, 16px); color: #cbd5e1; }
+.final-row .fs { font-size: clamp(16px, 4vw, 20px); font-weight: 500; color: #a5b4fc; }
+
+@keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* ── MOBILE OVERRIDES ── */
+@media (max-width: 480px) {
+  .screen { padding: 1.25rem 0.75rem; }
+  .group-inputs { grid-template-columns: 1fr 1fr; gap: 10px; max-width: 100%; }
+  .group-input-wrap { padding: 12px 14px; }
+  .scoreboard { gap: 6px; }
+  .btn-row { max-width: 100%; }
+  .btn { padding: 18px 12px; font-size: 16px; }
+  .char-name { font-size: clamp(34px, 10vw, 44px); }
+  .btn-primary, .btn-play { max-width: 100%; font-size: 16px; padding: 16px; }
+  .final-scores { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="glow"></div>
+
+  <!-- Home Screen -->
+  <div class="screen active" id="home-screen">
+    <div class="logo">Bible Charades</div>
+    <div class="hero">Name your groups</div>
+    <div class="sub">4 groups · 10 characters each · 15 seconds per turn</div>
+    <div class="group-inputs">
+      <div class="group-input-wrap">
+        <div class="group-label">GROUP 1</div>
+        <input class="group-input" id="g1" placeholder="The Lions" maxlength="16"/>
+      </div>
+      <div class="group-input-wrap">
+        <div class="group-label">GROUP 2</div>
+        <input class="group-input" id="g2" placeholder="The Eagles" maxlength="16"/>
+      </div>
+      <div class="group-input-wrap">
+        <div class="group-label">GROUP 3</div>
+        <input class="group-input" id="g3" placeholder="The Doves" maxlength="16"/>
+      </div>
+      <div class="group-input-wrap">
+        <div class="group-label">GROUP 4</div>
+        <input class="group-input" id="g4" placeholder="The Lambs" maxlength="16"/>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="screen" id="game-screen">
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="turn-badge" id="turn-badge"></div>
+    <div class="progress-text" id="progress-text"></div>
+    <div class="timer-ring">
+      <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle class="timer-bg" cx="60" cy="60" r="50"/>
+        <circle class="timer-progress" id="ring" cx="60" cy="60" r="50" stroke-dasharray="314.2" stroke-dashoffset="0" stroke="#6366f1"/>
+      </svg>
+      <div class="timer-number" id="timer">15</div>
+    </div>
+    <div class="char-name" id="char-name"></div>
+    <div class="char-cat" id="char-cat"></div>
+    <div class="btn-row">
+      <button class="btn btn-skip" onclick="skip()">Skip</button>
+      <button class="btn btn-got" onclick="gotIt()">Got it!</button>
+    </div>
+    <button class="btn-pause" onclick="pauseGame()">⏸ Pause</button>
+  </div>
+
+  <!-- Pause Screen -->
+  <div class="screen" id="pause-screen">
+    <div class="scoreboard" id="pause-scoreboard"></div>
+    <div id="pause-content"></div>
+  </div>
+
+  <!-- Winner Screen -->
+  <div class="screen" id="winner-screen">
+    <div class="trophy">🏆</div>
+    <div class="logo">Winner</div>
+    <div class="winner-name" id="winner-name"></div>
+    <div class="winner-score" id="winner-score"></div>
+    <div class="final-scores" id="final-scores"></div>
+    <button class="btn-primary" onclick="resetGame()">Play Again</button>
+  </div>
+</div>
+
+<script>
+const allChars = [
+  {name:"Moses",cat:"Old Testament"},{name:"Noah",cat:"Old Testament"},
+  {name:"Abraham",cat:"Old Testament"},{name:"David",cat:"Old Testament"},
+  {name:"Goliath",cat:"Old Testament"},{name:"Samson",cat:"Old Testament"},
+  {name:"Elijah",cat:"Old Testament"},{name:"Joseph",cat:"Old Testament"},
+  {name:"Ruth",cat:"Old Testament"},{name:"Esther",cat:"Old Testament"},
+  {name:"Solomon",cat:"Old Testament"},{name:"Jonah",cat:"Old Testament"},
+  {name:"Daniel",cat:"Old Testament"},{name:"Deborah",cat:"Old Testament"},
+  {name:"Gideon",cat:"Old Testament"},{name:"Isaiah",cat:"Old Testament"},
+  {name:"Jeremiah",cat:"Old Testament"},{name:"Ezekiel",cat:"Old Testament"},
+  {name:"Nehemiah",cat:"Old Testament"},{name:"Elisha",cat:"Old Testament"},
+  {name:"Jesus",cat:"New Testament"},{name:"Peter",cat:"New Testament"},
+  {name:"Paul",cat:"New Testament"},{name:"Mary",cat:"New Testament"},
+  {name:"John",cat:"New Testament"},{name:"Lazarus",cat:"New Testament"},
+  {name:"Martha",cat:"New Testament"},{name:"Zacchaeus",cat:"New Testament"},
+  {name:"Barnabas",cat:"New Testament"},{name:"Stephen",cat:"New Testament"},
+  {name:"Nicodemus",cat:"New Testament"},{name:"Judas",cat:"New Testament"},
+  {name:"Thomas",cat:"New Testament"},{name:"Lydia",cat:"New Testament"},
+  {name:"Timothy",cat:"New Testament"},{name:"Silas",cat:"New Testament"},
+  {name:"Andrew",cat:"New Testament"},{name:"Philip",cat:"New Testament"},
+  {name:"James",cat:"New Testament"},{name:"Matthew",cat:"New Testament"},
+];
+
+let groups=[], scores=[], groupChars=[];
+let currentGroup=0, currentChar=0, timeLeft=15;
+let interval;
+const circumference=314.2;
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  const defaults=['Group 1','Group 2','Group 3','Group 4'];
+  groups=['g1','g2','g3','g4'].map((id,i)=>document.getElementById(id).value.trim()||defaults[i]);
+  scores=[0,0,0,0];
+  const s=shuffle(allChars);
+  groupChars=[s.slice(0,10),s.slice(10,20),s.slice(20,30),s.slice(30,40)];
+  currentGroup=0; currentChar=0;
+  showScreen('game-screen');
+  renderScoreboard();
+  showChar();
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderScoreboard(){
+  document.getElementById('scoreboard').innerHTML=groups.map((g,i)=>`
+    <div class="score-card ${i===currentGroup?'active-group':''}">
+      <div class="gname">${g}</div>
+      <div class="gscore">${scores[i]}</div>
+    </div>`).join('');
+}
+
+function renderPauseScoreboard(){
+  document.getElementById('pause-scoreboard').innerHTML=groups.map((g,i)=>`
+    <div class="score-card ${i===currentGroup?'active-group':''}">
+      <div class="gname">${g}</div>
+      <div class="gscore">${scores[i]}</div>
+    </div>`).join('');
+}
+
+function showChar(){
+  const c=groupChars[currentGroup][currentChar];
+  document.getElementById('turn-badge').textContent=`${groups[currentGroup]}'s turn`;
+  document.getElementById('progress-text').textContent=`Character ${currentChar+1} of 10`;
+  const el=document.getElementById('char-name');
+  el.style.animation='none'; void el.offsetWidth; el.style.animation='pop 0.3s ease';
+  el.textContent=c.name;
+  document.getElementById('char-cat').textContent=c.cat;
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(interval);
+  timeLeft=15; updateRing();
+  document.getElementById('timer').textContent=timeLeft;
+  interval=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('timer').textContent=timeLeft;
+    updateRing();
+    if(timeLeft<=0){clearInterval(interval);advance();}
+  },1000);
+}
+
+function updateRing(){
+  const offset=circumference*(1-timeLeft/15);
+  const ring=document.getElementById('ring');
+  ring.style.strokeDashoffset=offset;
+  ring.style.stroke=timeLeft>8?'#6366f1':timeLeft>4?'#f59e0b':'#ef4444';
+}
+
+function gotIt(){clearInterval(interval);scores[currentGroup]++;advance();}
+function skip(){clearInterval(interval);advance();}
+
+function advance(){
+  currentChar++;
+  if(currentChar>=10){
+    currentGroup++; currentChar=0;
+    if(currentGroup>=4){showWinner();return;}
+    showGroupDonePause(); return;
+  }
+  renderScoreboard(); showChar();
+}
+
+function pauseGame(){
+  clearInterval(interval);
+  renderPauseScoreboard();
+  document.getElementById('pause-content').innerHTML=`
+    <div class="paused-title">Game Paused</div>
+    <div class="paused-sub" style="margin-bottom:1.5rem">${groups[currentGroup]} is still playing</div>
+    <button class="btn-play" onclick="resumeGame()">Resume</button>`;
+  showScreen('pause-screen');
+}
+
+function showGroupDonePause(){
+  renderPauseScoreboard();
+  document.getElementById('pause-content').innerHTML=`
+    <div class="paused-title">${groups[currentGroup-1]} is done!</div>
+    <div class="group-done-score">They scored ${scores[currentGroup-1]} out of 10</div>
+    <div class="paused-sub" style="margin-top:1.25rem">Next up:</div>
+    <div class="paused-next">${groups[currentGroup]}</div>
+    <button class="btn-play" onclick="resumeGame()">We're Ready — Play!</button>`;
+  showScreen('pause-screen');
+}
+
+function resumeGame(){
+  showScreen('game-screen');
+  renderScoreboard(); showChar();
+}
+
+function showWinner(){
+  showScreen('winner-screen');
+  const max=Math.max(...scores);
+  const wi=scores.indexOf(max);
+  document.getElementById('winner-name').textContent=groups[wi];
+  document.getElementById('winner-score').textContent=`${max} out of 10 characters guessed`;
+  const sorted=groups.map((g,i)=>({g,s:scores[i]})).sort((a,b)=>b.s-a.s);
+  document.getElementById('final-scores').innerHTML=sorted.map((r,rank)=>`
+    <div class="final-row ${rank===0?'winner-row':''}">
+      <span class="fn">${rank+1}. ${r.g}</span>
+      <span class="fs">${r.s} pts</span>
+    </div>`).join('');
+}
+
+function resetGame(){
+  ['g1','g2','g3','g4'].forEach(id=>document.getElementById(id).value='');
+  showScreen('home-screen');
+}
+</script>
+</body>
+</html>
